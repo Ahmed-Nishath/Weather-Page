@@ -349,28 +349,28 @@
         });
         
         async function fetchCoordinates(city, countryCode) {
-            const baseUrl = "http://api.openweathermap.org/";
+            const baseUrl = "https://api.openweathermap.org/";
             const weatherApiKey = "325b00b648603e09e2f66309aed032aa";
             const url = `${baseUrl}geo/1.0/direct?q=${city},${countryCode}&limit=1&appid=${weatherApiKey}`;
             return await fetch(url);
         }
         
         async function fetchWeather(lat, lon) {
-            const baseUrl = "http://api.openweathermap.org/";
+            const baseUrl = "https://api.openweathermap.org/";
             const weatherApiKey = "325b00b648603e09e2f66309aed032aa";
             const url = `${baseUrl}data/2.5/weather?lat=${lat}&lon=${lon}&appid=${weatherApiKey}`;
             return await fetch(url);
         }
         
         async function fetchAirQuality(lat, lon) {
-            const baseUrl = "http://api.openweathermap.org/";
+            const baseUrl = "https://api.openweathermap.org/";
             const weatherApiKey = "325b00b648603e09e2f66309aed032aa";
             const url = `${baseUrl}data/2.5/air_pollution?lat=${lat}&lon=${lon}&appid=${weatherApiKey}`;
             return await fetch(url);
         }
         
         async function fetchUVIndex(lat, lon) {
-            const baseUrl = "http://api.openweathermap.org/";
+            const baseUrl = "https://api.openweathermap.org/";
             const weatherApiKey = "325b00b648603e09e2f66309aed032aa";
             const url = `${baseUrl}data/2.5/uvi?lat=${lat}&lon=${lon}&appid=${weatherApiKey}`;
             return await fetch(url);
