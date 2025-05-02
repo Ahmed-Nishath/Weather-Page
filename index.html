@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Report Assistant</title>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2980b9;
+            --background-color: #f5f7fa;
+            --card-color: #ffffff;
+            --text-color: #333333;
+            --border-color: #e0e0e0;
+            --success-color: #2ecc71;
+            --warning-color: #e67e22;
+            --danger-color: #e74c3c;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: var(--primary-color);
+        }
+
+        .form-container {
+            background-color: var(--card-color);
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 16px;
+            transition: border 0.3s;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            width: 100%;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: var(--secondary-color);
+        }
+
+        .weather-report {
+            background-color: var(--card-color);
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 25px;
+            display: none;
+        }
+
+        .weather-report h2 {
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+
+        .weather-info {
+            margin-bottom: 20px;
+        }
+
+        .weather-info p {
+            margin-bottom: 10px;
+            padding-left: 15px;
+            position: relative;
+        }
+
+        .weather-info p:before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            color: var(--primary-color);
+        }
+
+        .recommendations {
+            background-color: rgba(52, 152, 219, 0.1);
+            border-left: 4px solid var(--primary-color);
+            padding: 15px;
+            border-radius: 0 4px 4px 0;
+        }
+
+        .recommendations h3 {
+            margin-bottom: 10px;
+            color: var(--primary-color);
+        }
+
+        .recommendations ul {
+            list-style-position: inside;
+        }
+
+        .recommendations li {
+            margin-bottom: 8px;
+        }
+
+        .loading {
+            text-align: center;
+            display: none;
+            margin: 20px 0;
+        }
+
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top: 4px solid var(--primary-color);
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            color: var(--danger-color);
+            background-color: rgba(231, 76, 60, 0.1);
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .form-container, .weather-report {
+                padding: 15px;
+            }
+        }
+
+        .weather-info strong {
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        .recommendations ul {
+            padding-left: 20px;
+        }
+
+        .recommendations li {
+            margin-bottom: 8px;
+            list-style-type: disc;
+        }
+
+        .recommendation-text {
+            line-height: 1.6;
+            padding: 5px 0;
+        }
+
+        .recommendation-text strong {
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Weather Report Assistant</h1>
+        
+        <div class="error" id="error-message"></div>
+        
+        <div class="form-container">
+            <div class="form-group">
+                <label for="city">City</label>
+                <input type="text" id="city" placeholder="Enter city name">
+            </div>
+            
+            <div class="form-group">
+                <label for="date">Date</label>
+                <input type="date" id="date" value="">
+            </div>
+
+            <button id="get-weather-btn">Get Weather Report</button>
+        </div>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Generating weather report...</p>
+        </div>
+        
+        <div class="weather-report" id="weather-report">
+            <h2 id="report-title">Weather Report</h2>
+            <div class="weather-info" id="weather-info"></div>
+            <div class="recommendations" id="recommendations"></div>
+        </div>
+    </div>
+
+    <script>
+         // Function to get URL parameters
+         function getUrlParams() {
+            const params = new URLSearchParams(window.location.search);
+            return {
+                city: params.get('city'),
+                date: params.get('date')
+            };
+        }
+
+        // Set form values from URL parameters on page load
+        function setFormValuesFromUrl() {
+            const { city, date } = getUrlParams();
+            
+            if (city) {
+                document.getElementById('city').value = city;
+            }
+            
+            if (date) {
+                // Validate date format (YYYY-MM-DD)
+                if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+                    document.getElementById('date').value = date;
+                } else {
+                    console.warn('Invalid date format in URL, using today instead');
+                    document.getElementById('date').valueAsDate = new Date();
+                }
+            } else {
+                // Set default date to today if no date in URL
+                document.getElementById('date').valueAsDate = new Date();
+            }
+        }
+
+        // Call this function when the page loads
+        window.onload = function() {
+            setFormValuesFromUrl();
+            
+            // If both city and date are provided in URL, automatically fetch weather
+            const { city, date } = getUrlParams();
+            if (city && date) {
+                document.getElementById('get-weather-btn').click();
+            }
+        };
+
+        // Set default date to today
+        document.getElementById('date').valueAsDate = new Date();
+
+        document.getElementById('get-weather-btn').addEventListener('click', async function() {
+            const city = document.getElementById('city').value.trim();
+            const dateInput = document.getElementById('date').value;
+            const selectedDate = new Date(dateInput);
+            const countryCode = "+94";
+            const apiKey = "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";
+            
+            // Reset UI
+            document.getElementById('error-message').style.display = 'none';
+            document.getElementById('weather-report').style.display = 'none';
+            document.getElementById('loading').style.display = 'block';
+            
+            try {
+                if (!city || !dateInput || !apiKey) {
+                    throw new Error('Please fill in all fields');
+                }
+                
+                // Get coordinates
+                const coordinatesResponse = await fetchCoordinates(city, countryCode);
+                const coordinatesData = await coordinatesResponse.json();
+                
+                if (!coordinatesData || coordinatesData.length === 0) {
+                    throw new Error('City not found. Please check the city name and country code.');
+                }
+                
+                const latitude = coordinatesData[0].lat;
+                const longitude = coordinatesData[0].lon;
+                
+                // Get weather data (Note: OpenWeatherMap's free tier only provides current weather)
+                // For historical data or forecasts, you would need a different API endpoint
+                const weatherResponse = await fetchWeather(latitude, longitude);
+                const weatherData = await weatherResponse.json();
+                
+                // Get air quality
+                const airQualityResponse = await fetchAirQuality(latitude, longitude);
+                const airQualityData = await airQualityResponse.json();
+                
+                // Get UV index
+                const uvIndexResponse = await fetchUVIndex(latitude, longitude);
+                const uvIndexData = await uvIndexResponse.json();
+                
+                // Format date as YYYY-MM-DD
+                const formattedDate = selectedDate.toISOString().split('T')[0];
+                
+                // Prepare prompt for Groq API
+                const prompt = preparePrompt(city, formattedDate, weatherData, airQualityData, uvIndexData);
+                
+                // Get weather report from Groq
+                const report = await getWeatherReport(apiKey, prompt);
+                console.log(report);
+                
+                // Display the report
+                displayWeatherReport(city, formattedDate, report);
+                
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        });
+        
+        async function fetchCoordinates(city, countryCode) {
+            const baseUrl = "http://api.openweathermap.org/";
+            const weatherApiKey = "325b00b648603e09e2f66309aed032aa";
+            const url = `${baseUrl}geo/1.0/direct?q=${city},${countryCode}&limit=1&appid=${weatherApiKey}`;
+            return await fetch(url);
+        }
+        
+        async function fetchWeather(lat, lon) {
+            const baseUrl = "http://api.openweathermap.org/";
+            const weatherApiKey = "325b00b648603e09e2f66309aed032aa";
+            const url = `${baseUrl}data/2.5/weather?lat=${lat}&lon=${lon}&appid=${weatherApiKey}`;
+            return await fetch(url);
+        }
+        
+        async function fetchAirQuality(lat, lon) {
+            const baseUrl = "http://api.openweathermap.org/";
+            const weatherApiKey = "325b00b648603e09e2f66309aed032aa";
+            const url = `${baseUrl}data/2.5/air_pollution?lat=${lat}&lon=${lon}&appid=${weatherApiKey}`;
+            return await fetch(url);
+        }
+        
+        async function fetchUVIndex(lat, lon) {
+            const baseUrl = "http://api.openweathermap.org/";
+            const weatherApiKey = "325b00b648603e09e2f66309aed032aa";
+            const url = `${baseUrl}data/2.5/uvi?lat=${lat}&lon=${lon}&appid=${weatherApiKey}`;
+            return await fetch(url);
+        }
+        
+        function preparePrompt(city, date, weatherData, airQualityData, uvIndexData) {
+            const airQualityInfo = {
+                "AQI": airQualityData.list[0].main.aqi,
+                "Components": airQualityData.list[0].components,
+                "Timestamp": airQualityData.list[0].dt
+            };
+            
+            const uvIndexInfo = uvIndexData.value;
+            
+            return `You are a weather assistant. Your task is to generate a concise weather report based on the provided data. The report must strictly adhere to the following format:
+                    Temperature: [Temperature in Celsius]\n
+                    Humidity: [Humidity Percentage]\n
+                    Wind Speed: [Wind Speed in km/h]\n
+                    Air Quality Index: [AQI Category]\n
+                    UV Index: [UV Index Value]\n
+
+                    Recommendations:\n
+                    [Recommendation 1]\n
+                    [Recommendation 2]\n
+                    [Recommendation 3]\n
+                    More recommendations can be added based on the provided data.
+
+                    Important Instructions:
+                    Do NOT include any title or first line like "Weather Report for [City] [Date]"
+                    Do not deviate from the format.
+                    You are not allowed to change any data from the weather forecast. temprature, humidty... every thing should be exactly as provided.
+                    Do not add bullet points in the output.
+                    Do not add extra sentences like Here is the weather report based on the provided data:
+                    Output should be only consist of the report
+                    Replace placeholders like [Temperature in Celsius], etc., with the corresponding data.
+                    Ensure that recommendations are practical and based on the provided weather conditions.
+                    Use proper formatting, tabs, alignments and bolding if necessary to highlight important factors
+
+                    Here is the data:
+                    Weather Forecast: ${JSON.stringify(weatherData)}
+                    Air Quality Index: ${JSON.stringify(airQualityInfo)}
+                    UVI: ${uvIndexInfo}`;
+        }
+        
+        async function getWeatherReport(apiKey, prompt) {
+            const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${apiKey}`
+                },
+                body: JSON.stringify({
+                    messages: [
+                        {
+                            "role": "user",
+                            "content": prompt,
+                        }
+                    ],
+                    model: "llama3-8b-8192",
+                    stream: false,
+                })
+            });
+            
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error?.message || 'Failed to get weather report');
+            }
+            
+            const data = await response.json();
+            return data.choices[0].message.content;
+        }
+        
+        function markdownToHtml(text) {
+            // Convert **bold** to <strong>bold</strong>
+            let html = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            
+            // Convert * bullet points to <li> items
+            html = html.replace(/^\s*\*\s+(.*$)/gm, '<li>$1</li>');
+            
+            return html;
+        }
+
+        function displayWeatherReport(city, date, report) {
+            const reportContainer = document.getElementById('weather-report');
+            const weatherInfoContainer = document.getElementById('weather-info');
+            const recommendationsContainer = document.getElementById('recommendations');
+            
+            // Convert Markdown to HTML
+            const htmlReport = markdownToHtml(report);
+            
+            // Try splitting by different versions of the recommendations header
+            let parts = htmlReport.split('<strong>Recommendations:</strong>');
+            if (parts.length === 1) {
+                parts = htmlReport.split('Recommendations:<br>');
+            }
+            if (parts.length === 1) {
+                parts = htmlReport.split('Recommendations:');
+            }
+            
+            const weatherInfo = parts[0].trim();
+            let recommendations = parts.length > 1 ? parts[1].trim() : '';
+            
+            // Update the title
+            document.getElementById('report-title').innerHTML = `Weather Report for ${city} on ${date}`;
+            
+            // Format and display weather info
+            weatherInfoContainer.innerHTML = weatherInfo.replace(/\n/g, '<br>');
+            
+            // Clear recommendations container first
+            recommendationsContainer.innerHTML = '';
+            
+            // Only show recommendations if they exist and are not empty
+            if (recommendations && recommendations.trim() !== '') {
+                // Remove any remaining <br> tags at the start
+                recommendations = recommendations.replace(/^<br>/, '');
+                
+                // Check if recommendations are in bullet point format
+                if (recommendations.includes('<li>')) {
+                    recommendationsContainer.innerHTML = `
+                        <h3>Recommendations:</h3>
+                        <ul>${recommendations}</ul>
+                    `;
+                } 
+                // Check if recommendations are in bold paragraph format
+                else if (recommendations.includes('<strong>')) {
+                    recommendationsContainer.innerHTML = `
+                        <h3>Recommendations:</h3>
+                        <div class="recommendation-text">${recommendations.replace(/<br><br>/g, '<br>')}</div>
+                    `;
+                }
+                // Fallback for any other format
+                else {
+                    const recommendationItems = recommendations.split('<br>')
+                        .filter(item => item.trim() !== '' && !item.trim().startsWith('<'));
+                    
+                    if (recommendationItems.length > 0) {
+                        let recommendationsHTML = '<h3>Recommendations:</h3><ul>';
+                        
+                        recommendationItems.forEach(item => {
+                            // Remove any remaining * characters if present
+                            recommendationsHTML += `<li>${item.replace(/^\*\s*/, '').trim()}</li>`;
+                        });
+                        
+                        recommendationsHTML += '</ul>';
+                        recommendationsContainer.innerHTML = recommendationsHTML;
+                    }
+                }
+            }
+            
+            reportContainer.style.display = 'block';
+        }
+        
+        function showError(message) {
+            const errorElement = document.getElementById('error-message');
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+        }
+    </script>
+</body>
+</html>
