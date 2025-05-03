@@ -242,25 +242,32 @@
     </div>
 
     <script>
-         // Function to get URL parameters
-         function getUrlParams() {
+        // Function to get URL parameters
+        function getUrlParams() {
             const params = new URLSearchParams(window.location.search);
             return {
                 city: params.get('city'),
-                date: params.get('date')
+                date: params.get('date'),
+                owmKey: params.get('owmKey'),   // OpenWeatherMap API Key
+                groqKey: params.get('groqKey')  // Groq API Key
             };
         }
 
+        let openWeatherApiKey = '';
+        let groqApiKey = '';
+
         // Set form values from URL parameters on page load
         function setFormValuesFromUrl() {
-            const { city, date } = getUrlParams();
-            
+            const { city, date, owmKey, groqKey: gKey } = getUrlParams();
+
+            openWeatherApiKey = owmKey;
+            groqApiKey = gKey;
+
             if (city) {
                 document.getElementById('city').value = city;
             }
-            
+
             if (date) {
-                // Validate date format (YYYY-MM-DD)
                 if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
                     document.getElementById('date').value = date;
                 } else {
@@ -268,113 +275,90 @@
                     document.getElementById('date').valueAsDate = new Date();
                 }
             } else {
-                // Set default date to today if no date in URL
                 document.getElementById('date').valueAsDate = new Date();
             }
         }
 
-        // Call this function when the page loads
-        window.onload = function() {
+        window.onload = function () {
             setFormValuesFromUrl();
-            
-            // If both city and date are provided in URL, automatically fetch weather
             const { city, date } = getUrlParams();
             if (city && date) {
                 document.getElementById('get-weather-btn').click();
             }
         };
 
-        // Set default date to today
-        document.getElementById('date').valueAsDate = new Date();
-
-        document.getElementById('get-weather-btn').addEventListener('click', async function() {
+        document.getElementById('get-weather-btn').addEventListener('click', async function () {
             const city = document.getElementById('city').value.trim();
             const dateInput = document.getElementById('date').value;
             const selectedDate = new Date(dateInput);
             const countryCode = "+94";
-            const apiKey = "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";
-            
+
             // Reset UI
             document.getElementById('error-message').style.display = 'none';
             document.getElementById('weather-report').style.display = 'none';
             document.getElementById('loading').style.display = 'block';
-            
+
             try {
-                if (!city || !dateInput || !apiKey) {
-                    throw new Error('Please fill in all fields');
+                if (!city || !dateInput || !openWeatherApiKey || !groqApiKey) {
+                    throw new Error('Missing required input or API key(s)');
                 }
-                
-                // Get coordinates
+
                 const coordinatesResponse = await fetchCoordinates(city, countryCode);
                 const coordinatesData = await coordinatesResponse.json();
-                
+
                 if (!coordinatesData || coordinatesData.length === 0) {
                     throw new Error('City not found. Please check the city name and country code.');
                 }
-                
+
                 const latitude = coordinatesData[0].lat;
                 const longitude = coordinatesData[0].lon;
-                
-                // Get weather data (Note: OpenWeatherMap's free tier only provides current weather)
-                // For historical data or forecasts, you would need a different API endpoint
+
                 const weatherResponse = await fetchWeather(latitude, longitude);
                 const weatherData = await weatherResponse.json();
-                
-                // Get air quality
+
                 const airQualityResponse = await fetchAirQuality(latitude, longitude);
                 const airQualityData = await airQualityResponse.json();
-                
-                // Get UV index
+
                 const uvIndexResponse = await fetchUVIndex(latitude, longitude);
                 const uvIndexData = await uvIndexResponse.json();
-                
-                // Format date as YYYY-MM-DD
+
                 const formattedDate = selectedDate.toISOString().split('T')[0];
-                
-                // Prepare prompt for Groq API
                 const prompt = preparePrompt(city, formattedDate, weatherData, airQualityData, uvIndexData);
-                
-                // Get weather report from Groq
-                const report = await getWeatherReport(apiKey, prompt);
+                const report = await getWeatherReport(groqApiKey, prompt);
                 console.log(report);
-                
-                // Display the report
+
                 displayWeatherReport(city, formattedDate, report);
-                
             } catch (error) {
                 showError(error.message);
             } finally {
                 document.getElementById('loading').style.display = 'none';
             }
         });
-        
+
         async function fetchCoordinates(city, countryCode) {
             const baseUrl = "https://api.openweathermap.org/";
-            const weatherApiKey = "325b00b648603e09e2f66309aed032aa";
-            const url = `${baseUrl}geo/1.0/direct?q=${city},${countryCode}&limit=1&appid=${weatherApiKey}`;
+            const url = `${baseUrl}geo/1.0/direct?q=${city},${countryCode}&limit=1&appid=${openWeatherApiKey}`;
             return await fetch(url);
         }
-        
+
         async function fetchWeather(lat, lon) {
             const baseUrl = "https://api.openweathermap.org/";
-            const weatherApiKey = "325b00b648603e09e2f66309aed032aa";
-            const url = `${baseUrl}data/2.5/weather?lat=${lat}&lon=${lon}&appid=${weatherApiKey}`;
+            const url = `${baseUrl}data/2.5/weather?lat=${lat}&lon=${lon}&appid=${openWeatherApiKey}`;
             return await fetch(url);
         }
-        
+
         async function fetchAirQuality(lat, lon) {
             const baseUrl = "https://api.openweathermap.org/";
-            const weatherApiKey = "325b00b648603e09e2f66309aed032aa";
-            const url = `${baseUrl}data/2.5/air_pollution?lat=${lat}&lon=${lon}&appid=${weatherApiKey}`;
+            const url = `${baseUrl}data/2.5/air_pollution?lat=${lat}&lon=${lon}&appid=${openWeatherApiKey}`;
             return await fetch(url);
         }
-        
+
         async function fetchUVIndex(lat, lon) {
             const baseUrl = "https://api.openweathermap.org/";
-            const weatherApiKey = "325b00b648603e09e2f66309aed032aa";
-            const url = `${baseUrl}data/2.5/uvi?lat=${lat}&lon=${lon}&appid=${weatherApiKey}`;
+            const url = `${baseUrl}data/2.5/uvi?lat=${lat}&lon=${lon}&appid=${openWeatherApiKey}`;
             return await fetch(url);
         }
+
         
         function preparePrompt(city, date, weatherData, airQualityData, uvIndexData) {
             const airQualityInfo = {
